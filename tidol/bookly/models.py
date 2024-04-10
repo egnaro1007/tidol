@@ -19,7 +19,7 @@ class Book(models.Model):
     def __str__(self):
         return self.title + "by" + str(self.author.name)
     
-class Chaper(models.Model):
+class Chapter(models.Model):
     title = models.CharField(max_length=128)
     chapter_number = models.IntegerField()
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='chapters')
