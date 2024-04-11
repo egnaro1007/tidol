@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from .models import Author, Book, Chapter
-from .serializers import BookSerializer, BookDetailSerializer, ChapterSerializer
+from .serializers import AuthorSerializer, BookSerializer, BookDetailSerializer, ChapterSerializer
 
 class Test(APIView):
     def get(self, request, format=None):
@@ -115,6 +115,49 @@ class ChapterViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
             
+
+class QueryAuthorView(APIView):
+    def get(self, request, format=None):
+        query = request.query_params.get('q')
+        authors = Author.objects.filter(name__icontains=query)
+        if authors.count() == 0:
+            return Response({'error': 'No authors found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = AuthorSerializer(authors, many=True)
+        return Response(serializer.data)
+        
+class QueryBookView(APIView):
+    def get(self, request, format=None):
+        query = request.query_params.get('q')
+        books = Book.objects.filter(title__icontains=query)
+        if books.count() == 0:
+            return Response({'error': 'No books found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = BookSerializer(books, many=True)
+        return Response(serializer.data)    
+    
+class QueryView(APIView):
+    def get(self, request, format=None):
+        query = request.query_params.get('q')
+        books = Book.objects.filter(title__icontains=query)
+        authors = Author.objects.filter(name__icontains=query)
+        if books.count() == 0 and authors.count() == 0:
+            return Response({'error': 'No books or authors found.'}, status=status.HTTP_404_NOT_FOUND)
+        book_serializer = BookSerializer(books, many=True)
+        author_serializer = AuthorSerializer(authors, many=True)
+        return Response({'books': book_serializer.data, 'authors': author_serializer.data}, status=status.HTTP_200_OK)    
+    
+class GetRecentUpdatesView(APIView):
+    def get(self, request, format=None):
+        books = []
+        
+        chapters = Chapter.objects.all().order_by('-lastupdated')
+        for chapter in chapters:
+            if chapter.book not in books:
+                books.append(chapter.book)
+            if len(books) >= 5:
+                break
+        
+        book_serializer = BookSerializer(books, many=True)
+        return Response(book_serializer.data, status=status.HTTP_200_OK)
     
 
 # class BookCreate(APIView):
