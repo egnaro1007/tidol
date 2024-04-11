@@ -1,13 +1,14 @@
 from django.shortcuts import render
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
+from rest_framework import status
 from rest_framework import viewsets
+from rest_framework import serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
 
-from .models import Book, Author
-from .serializers import BookSerializer, BookDetailSerializer
+from .models import Author, Book, Chapter
+from .serializers import BookSerializer, BookDetailSerializer, ChapterSerializer
 
 class Test(APIView):
     def get(self, request, format=None):
@@ -46,6 +47,7 @@ class BookViewSet(viewsets.ModelViewSet):
         book_data = QueryDict('', mutable=True)
         book_data.update(request.data)
         book_data['author'] = author.id
+        
         serializer = BookSerializer(data=book_data)
 
         if serializer.is_valid():
@@ -89,6 +91,30 @@ class BookViewSet(viewsets.ModelViewSet):
         book = self.get_object()
         book.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
+class ChapterViewSet(viewsets.ModelViewSet):
+    queryset = Chapter.objects.all()
+    
+    serializer_class = ChapterSerializer
+    
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+        
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+        
+    def update(self, request, *args, **kwargs):
+        return Response({'error': 'Method not allowed.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+    def partial_update(self, request, *args, **kwargs):
+        if 'book' in request.data and request.data['book'] != self.get_object().book.id:
+            raise serializers.ValidationError({'error': 'The book which this chapter belongs to cannot be changed after creation.'})
+        return super().partial_update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+            
     
 
 # class BookCreate(APIView):

@@ -17,4 +17,12 @@ class BookDetailSerializer(serializers.ModelSerializer):
             fields = ['id', 'title', 'chapter_number']
 
     chapters = ChapterSerializer(many=True, read_only=True)
+    
+    
+class ChapterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Chapter
+        fields = ['id', 'title', 'chapter_number', 'book', 'content', 'created', 'lastupdated']
+        read_only_fields = ['created', 'lastupdated']
+        
         
