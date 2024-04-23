@@ -4,28 +4,17 @@ from django.http import QueryDict
 from rest_framework import status
 from rest_framework import viewsets
 from rest_framework import serializers
+from rest_framework import permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from .models import Author, Book, Chapter
 from .serializers import AuthorSerializer, BookSerializer, BookDetailSerializer, ChapterSerializer
+from .permissions import IsAuthor, IsAuthorOf
 
 class Test(APIView):
     def get(self, request, format=None):
         return Response({'message': 'Hello, World!'})
-    
-def find_or_create_author(author_data):
-    if isinstance(author_data, int):
-        try:
-            author = Author.objects.get(id=author_data)
-        except ObjectDoesNotExist:
-            return None, {'error': 'Author with given ID does not exist.'}, status.HTTP_400_BAD_REQUEST
-    elif isinstance(author_data, str):
-        author = Author.objects.create(name=author_data)
-    else:
-        return None, {'error': 'Invalid author data.'}, status.HTTP_400_BAD_REQUEST
-
-    return author, None, None
 
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.all()
@@ -34,15 +23,22 @@ class BookViewSet(viewsets.ModelViewSet):
         if self.action in ['retrieve']:
             return BookDetailSerializer
         return BookSerializer
-
+    
+    def get_permissions(self):
+        if self.action in ['retrieve', 'list', ]:
+            return [permissions.AllowAny(), ]
+        elif self.action == 'create':
+            return [IsAuthor(), ]
+        return [IsAuthorOf(), ]
 
     # POST
     def create(self, request, *args, **kwargs):
-        author_data = request.data.get('author')
-        author, error, status_code = find_or_create_author(author_data)
-
-        if error is not None:
-            return Response(error, status=status_code)
+        user = request.user
+        
+        try:
+            author = Author.objects.get(user=user)
+        except Author.DoesNotExist:
+            return Response({'error': 'Not an author'}, status=status.HTTP_404_NOT_FOUND)
 
         book_data = QueryDict('', mutable=True)
         book_data.update(request.data)
@@ -57,9 +53,9 @@ class BookViewSet(viewsets.ModelViewSet):
 
     #GET
     def retrieve(self, request, *args, **kwargs):
-        book = self.get_object()
-        serializer = BookDetailSerializer(book)
-        return Response(serializer.data)
+        # book = self.get_object()
+        # serializer = BookDetailSerializer(book)
+        return super().retrieve(request, *args, **kwargs)
     
     #PUT
     def update(self, request, *args, **kwargs):
@@ -68,19 +64,7 @@ class BookViewSet(viewsets.ModelViewSet):
     #PATCH
     def partial_update(self, request, *args, **kwargs):
         book = self.get_object()
-        author_data = request.data.get('author')
-        if author_data is not None:
-            author, error, status_code = find_or_create_author(author_data)
-            if error is not None:
-                return Response(error, status=status_code)
-            book_data = QueryDict('', mutable=True)
-            book_data.update(request.data)
-            book_data['author'] = author.id
-        else:
-            book_data = request.data
-
-        serializer = BookSerializer(book, data=book_data, partial=True)
-
+        serializer = BookSerializer(book, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -97,6 +81,14 @@ class ChapterViewSet(viewsets.ModelViewSet):
     queryset = Chapter.objects.all()
     
     serializer_class = ChapterSerializer
+    
+    def get_permissions(self):
+        if self.action == 'retrieve':
+            return [permissions.AllowAny(), ]
+        elif self.action == 'create':
+            return [IsAuthor(), ]
+        return [IsAuthorOf(), ]
+    
     
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
