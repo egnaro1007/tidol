@@ -7,14 +7,18 @@ class AuthorSerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 class BookSerializer(serializers.ModelSerializer):
+    author_name = serializers.CharField(source='author.name', read_only=True)
+
     class Meta:
         model = Book
-        fields = ['id', 'title', 'author', 'description']
+        fields = ['id', 'title', 'author', 'author_name', 'description']
         
 class BookDetailSerializer(serializers.ModelSerializer):
+    author_name = serializers.CharField(source='author.name', read_only=True)
+    
     class Meta:
         model = Book
-        fields = ['id', 'title', 'author', 'description', 'chapters']
+        fields = ['id', 'title', 'author', 'author_name' , 'description', 'chapters']
 
     class ChapterSerializer(serializers.ModelSerializer):
         class Meta:
