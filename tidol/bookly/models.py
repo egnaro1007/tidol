@@ -1,5 +1,6 @@
-from authentication.models import CustomUser
+import os
 from django.db import models
+from authentication.models import CustomUser
 
 
 class Author(models.Model):
@@ -10,10 +11,17 @@ class Author(models.Model):
         return self.name
 
 
+def get_cover_upload_to(instance, filename):
+    base_filename, extension = os.path.splitext(filename)
+    new_filename = f"cover_{instance.id}{extension}"
+    return os.path.join('covers/', new_filename)
+
+
 class Book(models.Model):
     title = models.CharField(max_length=128)
     author = models.ForeignKey(Author, on_delete=models.CASCADE, related_name='books')
     description = models.TextField(null=True)
+    cover = models.ImageField(upload_to=get_cover_upload_to, null=True)
     lastupdated = models.DateTimeField(auto_now=True)
 
     # Chapters
