@@ -1,5 +1,6 @@
 import os
 from django.db import models
+from django.utils import timezone
 from authentication.models import CustomUser
 
 
@@ -62,12 +63,49 @@ class Genre(models.Model):
     def __str__(self):
         return self.name
 
+class History(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=False, blank=False)
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, null=False, blank=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'chapter'], name='unique_history')
+        ]
+        
+    def save(self, *args, **kwargs):
+        try:
+            existing = History.objects.get(user=self.user, chapter__book=self.chapter.book)
+            existing.timestamp = timezone.now()
+            existing.save()
+        except History.DoesNotExist:
+            super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.chapter.title}"
+
 
 class Comment(models.Model):
-    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='comments')
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='comments')
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    parent_comment = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
     text = models.TextField()
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.text
+
+class Review(models.Model):
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='reviews', null=False, blank=False)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=False, blank=False)
+    score = models.IntegerField(choices=[(i, i) for i in range(1, 6)], blank=False, null=False)
+    comment = models.TextField(null=True)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['book', 'user'], name='unique_review')
+        ]
+        
+    def __str__(self):
+        return f"{self.user.username} - {self.book.title} - {self.score}"
+    
