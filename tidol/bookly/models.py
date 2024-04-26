@@ -33,11 +33,16 @@ class Book(models.Model):
 
 class Chapter(models.Model):
     title = models.CharField(max_length=128)
-    chapter_number = models.DecimalField(max_digits=16, decimal_places=2, unique=True, null=False, blank=False)
+    chapter_number = models.DecimalField(max_digits=16, decimal_places=2, null=False, blank=False)
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='chapters')
     content = models.TextField()
     created = models.DateTimeField(auto_now_add=True)
     lastupdated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['book', 'chapter_number'], name='unique_chapter_number')
+        ]
 
     def save(self, *args, **kwargs):
         if self.pk is not None:
