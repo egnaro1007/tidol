@@ -1,17 +1,18 @@
-from django.http import QueryDict
+from rest_framework import views
+from rest_framework import viewsets
 from rest_framework import permissions
 from rest_framework import serializers
 from rest_framework import status
-from rest_framework import viewsets
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from django.http import QueryDict
+from django.shortcuts import get_object_or_404
 
-from .models import Author, Book, Chapter
 from .permissions import IsAuthor, IsAuthorOf
-from .serializers import AuthorSerializer, BookSerializer, BookDetailSerializer, ChapterSerializer
+from .models import Author, Book, Chapter, Comment
+from .serializers import AuthorSerializer, BookSerializer, BookDetailSerializer, ChapterSerializer, CommentSerializer
 
 
-class Test(APIView):
+class Test(views.APIView):
     def get(self, request, format=None):
         return Response({'message': 'Hello, World!'})
 
@@ -108,7 +109,57 @@ class ChapterViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
 
-class QueryAuthorView(APIView):
+class CommentView(views.APIView):
+    # Send comment
+    def post(self, request, id, format=None):
+        chapter_id = id
+        user = request.user
+        parrent_comment_id = request.data.get('parent_comment', None)
+        text = request.data.get('text')
+
+        try:
+            chapter = Chapter.objects.get(pk=chapter_id)
+            if parrent_comment_id:
+                parent_comment = Comment.objects.get(pk=parrent_comment_id)
+        except Chapter.DoesNotExist:
+            return Response({'error': 'Chapter not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Comment.DoesNotExist:
+            parent_comment = None
+
+        comment = Comment.objects.create(chapter=chapter, user=user, parent_comment=parent_comment, text=text)
+        serializer = CommentSerializer(comment)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    # Delete comment
+    def delete(self, request, id, format=None):
+        user = request.user
+        comment_id = id
+        
+        try:
+            comment = Comment.objects.get(pk=comment_id)
+        except Comment.DoesNotExist:
+            return Response({'error': 'Comment not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        if comment.user != user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        
+        comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    # Retrieve comments
+    def get(self, request, id, format=None):
+        chapter_id = id
+        
+        try:
+            comments = Comment.objects.filter(chapter=chapter_id)
+        except Chapter.DoesNotExist:
+            chapter = get_object_or_404(Chapter, pk=chapter_id)
+            return Response([], status=status.HTTP_200_OK)
+        
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class QueryAuthorView(views.APIView):
     def get(self, request, format=None):
         query = request.query_params.get('q')
         authors = Author.objects.filter(name__icontains=query)
@@ -118,7 +169,7 @@ class QueryAuthorView(APIView):
         return Response(serializer.data)
 
 
-class QueryBookView(APIView):
+class QueryBookView(views.APIView):
     def get(self, request, format=None):
         query = request.query_params.get('q')
         books = Book.objects.filter(title__icontains=query)
@@ -128,7 +179,7 @@ class QueryBookView(APIView):
         return Response(serializer.data)
 
 
-class QueryView(APIView):
+class QueryView(views.APIView):
     def get(self, request, format=None):
         query = request.query_params.get('q')
         books = Book.objects.filter(title__icontains=query)
@@ -140,7 +191,7 @@ class QueryView(APIView):
         return Response({'books': book_serializer.data, 'authors': author_serializer.data}, status=status.HTTP_200_OK)
 
 
-class GetRecentUpdatesView(APIView):
+class GetRecentUpdatesView(views.APIView):
     def get(self, request, format=None):
         books = []
 
@@ -154,64 +205,4 @@ class GetRecentUpdatesView(APIView):
         book_serializer = BookSerializer(books, many=True)
         return Response(book_serializer.data, status=status.HTTP_200_OK)
 
-# class BookCreate(APIView):
-#     def post(self, request, format=None):
-#         author_data = request.data.get('author')
-#         author, error, status_code = find_or_create_author(author_data)
-
-#         if error is not None:
-#             return Response(error, status=status_code)
-
-#         book_data = QueryDict('', mutable=True)
-#         book_data.update(request.data)
-#         book_data['author'] = author.id
-#         serializer = BookSerializer(data=book_data)
-
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# class BookInfo(APIView):
-#     def get(self, request, book_id, format=None):
-#         try:
-#             book = Book.objects.get(id=book_id)
-#         except ObjectDoesNotExist:
-#             return Response({'error': 'Book with given ID does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-
-#         serializer = BookDetailSerializer(book)
-#         return Response(serializer.data)
-
-#     def patch(self, request, book_id, format=None):
-#         try:
-#             book = Book.objects.get(id=book_id)
-#         except ObjectDoesNotExist:
-#             return Response({'error': 'Book with given ID does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-
-#         author_data = request.data.get('author')
-#         if author_data is not None:
-#             author, error, status_code = find_or_create_author(author_data)
-#             if error is not None:
-#                 return Response(error, status=status_code)
-#             book_data = QueryDict('', mutable=True)
-#             book_data.update(request.data)
-#             book_data['author'] = author.id
-#         else:
-#             book_data = request.data
-
-#         serializer = BookSerializer(book, data=book_data, partial=True)
-
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     def delete(self, request, book_id, format=None):
-#         try:
-#             book = Book.objects.get(id=book_id)
-#         except ObjectDoesNotExist:
-#             return Response({'error': 'Book with given ID does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-
-#         book.delete()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
+  
