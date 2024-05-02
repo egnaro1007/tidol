@@ -8,8 +8,8 @@ from django.http import QueryDict
 from django.shortcuts import get_object_or_404
 
 from .permissions import IsAuthor, IsAuthorOf
-from .models import Author, Book, Chapter, Comment
-from .serializers import AuthorSerializer, BookSerializer, BookDetailSerializer, ChapterSerializer, CommentSerializer
+from .models import Author, Book, Chapter, Comment, Review
+from .serializers import AuthorSerializer, BookSerializer, BookDetailSerializer, ChapterSerializer, CommentSerializer, ReviewSerializer
 
 
 class Test(views.APIView):
@@ -159,6 +159,67 @@ class CommentView(views.APIView):
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+class ReviewView(views.APIView):
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [permissions.IsAuthenticated(), ]
+        elif self.request.method == 'DELETE':
+            return [IsAuthorOf(), ]
+        elif self.request.method == 'GET':
+            return [permissions.AllowAny(), ]
+        return super().get_permissions()
+    
+    # User review a book
+    def post(self, request, id, format=None):
+        book_id = id
+        user = request.user
+        score = request.data.get('score')
+        comment = request.data.get('comment', None)
+        
+        # Check if the book is exist
+        try:
+            book = Book.objects.get(pk=book_id)
+        except Book.DoesNotExist:
+            return Response({'error': 'Book not found.'}, status=status.HTTP_404_NOT_FOUND)
+        # Check if the score is valid
+        if score not in range(1, 6):
+            return Response({'error': 'Invalid score.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        review = Review.objects.create(book=book, user=user, score=score, comment=comment)
+        serializer = ReviewSerializer(review)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    # User delete their review
+    def delete(self, request, id, format=None):
+        user = request.user
+        review_id = id
+        
+        try:
+            review = Review.objects.get(pk=review_id)
+        except Review.DoesNotExist:
+            return Response({'error': 'Comment not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        if review.user != user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        
+        review.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+        
+    # Retrieve reviews
+    def get(self, request, id, format=None):
+        book_id = id
+        
+        try:
+            reviews = Review.objects.filter(book=book_id)
+        except Book.DoesNotExist:
+            book = get_object_or_404(Book, pk=book_id)
+            return Response([], status=status.HTTP_200_OK)
+    
+        serializer = ReviewSerializer(reviews, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class QueryAuthorView(views.APIView):
     def get(self, request, format=None):
         query = request.query_params.get('q')
@@ -205,4 +266,3 @@ class GetRecentUpdatesView(views.APIView):
         book_serializer = BookSerializer(books, many=True)
         return Response(book_serializer.data, status=status.HTTP_200_OK)
 
-  

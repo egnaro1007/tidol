@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Author, Book, Chapter, Comment
+from .models import Author, Book, Chapter, Comment, Review
 
 
 class AuthorSerializer(serializers.ModelSerializer):
@@ -39,7 +39,18 @@ class ChapterSerializer(serializers.ModelSerializer):
         read_only_fields = ['created', 'lastupdated']
         
 class CommentSerializer(serializers.ModelSerializer):
+    chapter_title = serializers.CharField(source='chapter.title', read_only=True)
+    book_title = serializers.CharField(source='chapter.book.title', read_only=True)
+    
     class Meta:
         model = Comment
-        fields = ['id', 'chapter', 'user', 'content', 'timestamp']
+        fields = ['id', 'chapter', 'chapter_title', 'book_title', 'user', 'content', 'timestamp']
+        read_only_fields = ['timestamp']
+        
+class ReviewSerializer(serializers.ModelSerializer):
+    book_title = serializers.CharField(source='book.title', read_only=True)
+    
+    class Meta:
+        model = Review
+        fields = ['id', 'book', 'book_title', 'user', 'score', 'comment', 'timestamp']
         read_only_fields = ['timestamp']
