@@ -43,7 +43,10 @@ class Chapter(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['book', 'chapter_number'], name='unique_chapter_number')
-        ]
+        ]  
+            
+    def count_views(self):
+        return History.objects.filter(chapter=self).count()
 
     def save(self, *args, **kwargs):
         if self.pk is not None:

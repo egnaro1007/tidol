@@ -25,27 +25,35 @@ class BookDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'author', 'author_name', 'description', 'chapters']
 
     class ChapterSerializer(serializers.ModelSerializer):
+        viewcount = serializers.SerializerMethodField()
         is_read = serializers.SerializerMethodField()
         
         class Meta:
             model = Chapter
-            fields = ['id', 'title', 'chapter_number', 'lastupdated', 'is_read']
+            fields = ['id', 'title', 'chapter_number', 'lastupdated', 'is_read', 'viewcount']
         
         def get_is_read(self, obj):
             request = self.context.get('request')
             if request and request.user.is_authenticated:
                 return History.objects.filter(user=request.user, chapter=obj).exists()
             return False
+        
+        def get_viewcount(self, obj):
+            return obj.count_views()
 
     chapters = ChapterSerializer(many=True, read_only=True)
 
 
 class ChapterSerializer(serializers.ModelSerializer):
+    viewcount = serializers.SerializerMethodField()
+    
     class Meta:
         model = Chapter
-        fields = ['id', 'title', 'chapter_number', 'book', 'content', 'created', 'lastupdated']
+        fields = ['id', 'title', 'chapter_number', 'book', 'content', 'created', 'lastupdated', 'viewcount']
         read_only_fields = ['created', 'lastupdated']
-
+        
+    def get_viewcount(self, obj):
+        return obj.count_views()
 
 class BookmarkSerializer(serializers.ModelSerializer):
     book_title = serializers.CharField(source='chapter.book.title', read_only=True)
