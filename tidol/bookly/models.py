@@ -110,7 +110,7 @@ class Review(models.Model):
         return f"{self.user.username} - {self.book.title} - {self.score}"
     
 class Bookmark(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="users", null=False, 
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="bookmarks", null=False, 
                                 blank=False)
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name="bookmarks", null=False,
                                    blank=False)

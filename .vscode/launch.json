@@ -12,7 +12,7 @@
                 "runserver"
             ],
             "django": true,
-            "autoStartBrowser": true,
+            "autoStartBrowser": false,
             "program": "${workspaceFolder}\\tidol\\manage.py"
         }
     ]
