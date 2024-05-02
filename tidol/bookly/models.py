@@ -130,6 +130,8 @@ class Follow(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        pass
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'book'], name='unique_follow')
+        ]
     def __str__(self) -> str:
         return f"{self.user.username} - {self.book.title} - {self.timestamp}"

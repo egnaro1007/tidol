@@ -7,9 +7,9 @@ from rest_framework.response import Response
 from django.http import QueryDict
 from django.shortcuts import get_object_or_404
 
-from .models import Author, Book, Chapter, Comment, Review, Bookmark, CustomUser
+from .models import Author, Book, Chapter, Comment, Review, Bookmark, CustomUser, Follow
 from .permissions import IsAuthor, IsAuthorOf
-from .serializers import AuthorSerializer, BookSerializer, BookDetailSerializer, ChapterSerializer, CommentSerializer, ReviewSerializer, BookmarkSerializer
+from .serializers import AuthorSerializer, BookSerializer, BookDetailSerializer, ChapterSerializer, CommentSerializer, ReviewSerializer, BookmarkSerializer, FollowSerializer
 
 
 class Test(views.APIView):
@@ -290,7 +290,63 @@ class ReviewView(views.APIView):
         serializer = ReviewSerializer(reviews, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class FollowView(views.APIView):
+    def get_permissions(self):
+        if self.request.method == 'POST' or self.request.method == 'GET':
+            return [permissions.IsAuthenticated(), ] 
+        elif self.request.method == 'PATCH' or self.request.method == 'DELETE':
+            return [IsAuthorOf(), ]
+        return super().get_permissions()
+    
+    def post(self, request, id, format=None):
+        user = request.user
+        book_id = request.data.get('book_id')
+        # book = Book.objects.get()
+        
+        try:
+            # TODO: Get book object when user interact with web interface instead of using pk=book_id
+            book = Book.objects.get(pk=book_id)
+        except Book.DoesNotExist:
+            return Response({'error': 'Book in the query does not exit'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        book_following = Follow.objects.create(user=user, book=book)
+        serializers = FollowSerializer(book_following)
+        return Response(serializers.data, status=status.HTTP_201_CREATED)
+    
+    def get(self, request, id, format=None):
+        try:
+            follows = Follow.objects.filter(user=request.user)
+        except Follow.DoesNotExist or not follows.exists():
+            return Response({'error': 'User f{user_id} is not following any books at the moment'}, status=status.HTTP_204_NO_CONTENT)
+        
+        if request.user != CustomUser.objects.get(pk=id):
+            return Response({'error': 'Wrong user id declared'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        serializers = FollowSerializer(follows, many=True)
+        return Response(serializers.data, status=status.HTTP_200_OK)
 
+    def delete(self, request, id, format=None):
+        user = request.user
+        book = request.data.get('book')
+        # following_id = id
+
+        following_book = get_object_or_404(Follow, user=user, book=book)
+        
+        if following_book is None:
+            return Response({'error': 'This user does not follow this book'})
+        
+        if following_book.user != user:
+            return Response({'error': 'You are not authorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+        following_book.delete()
+        return Response({'status': 'Deleted'}, status=status.HTTP_200_OK)
+    
+    def update(self, request, id, format=None):
+        return Response({'error': 'Method not allowed.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+    def partial_update(self, request, id, format=None):
+        return Response({'error': 'Method not allowed.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
 class QueryAuthorView(views.APIView):
     def get(self, request, format=None):
         query = request.query_params.get('q')
