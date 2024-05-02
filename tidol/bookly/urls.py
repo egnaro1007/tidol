@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from .views import Test, BookViewSet, ChapterViewSet, BookmarkViewSet, CommentView, ReviewView, QueryView, QueryAuthorView, QueryBookView, GetRecentUpdatesView, FollowView
+from .views import Test, BookViewSet, ChapterViewSet, BookmarkViewSet, CommentView, ReviewView, QueryView, QueryAuthorView, QueryBookView, HistoryView, GetRecentUpdatesView, FollowView
 
 router = SimpleRouter()
 router.register(r'book', BookViewSet, basename='book')
@@ -17,6 +17,7 @@ urlpatterns = [
                   path('comment/<int:id>/', CommentView.as_view(), name='comment'),
                   path('review/<int:id>/', ReviewView.as_view(), name='review'),
 
-                  path('recentUpdates', GetRecentUpdatesView.as_view(), name='recent-updates'),
+                  path('history/', HistoryView.as_view(), name='history'),
+                  path('recentUpdates/', GetRecentUpdatesView.as_view(), name='recent-updates'),
                   path('follow/<int:id>/', FollowView.as_view(), name='follow')
               ] + router.urls

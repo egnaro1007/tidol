@@ -7,9 +7,9 @@ from rest_framework.response import Response
 from django.http import QueryDict
 from django.shortcuts import get_object_or_404
 
-from .models import Author, Book, Chapter, Comment, Review, Bookmark, CustomUser, Follow
+from .models import Author, Book, Chapter, Comment, Review, Bookmark, CustomUser, Follow, History
 from .permissions import IsAuthor, IsAuthorOf
-from .serializers import AuthorSerializer, BookSerializer, BookDetailSerializer, ChapterSerializer, CommentSerializer, ReviewSerializer, BookmarkSerializer, FollowSerializer
+from .serializers import AuthorSerializer, BookSerializer, BookDetailSerializer, ChapterSerializer, CommentSerializer, ReviewSerializer, BookmarkSerializer, FollowSerializer, HistorySerializer
 
 
 class Test(views.APIView):
@@ -54,8 +54,6 @@ class BookViewSet(viewsets.ModelViewSet):
 
     # GET
     def retrieve(self, request, *args, **kwargs):
-        # book = self.get_object()
-        # serializer = BookDetailSerializer(book)
         return super().retrieve(request, *args, **kwargs)
 
     # PUT
@@ -94,6 +92,13 @@ class ChapterViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     def retrieve(self, request, *args, **kwargs):
+        user = request.user
+        if user.is_authenticated:
+            try:
+                history_record = History(user=user, chapter=self.get_object())
+                history_record.save() 
+            except History.DoesNotExist:
+                History.objects.create(user=user, chapter=self.get_object())
         return super().retrieve(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
@@ -290,6 +295,7 @@ class ReviewView(views.APIView):
         serializer = ReviewSerializer(reviews, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class FollowView(views.APIView):
     def get_permissions(self):
         if self.request.method == 'POST' or self.request.method == 'GET':
@@ -346,6 +352,17 @@ class FollowView(views.APIView):
     
     def partial_update(self, request, id, format=None):
         return Response({'error': 'Method not allowed.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+   
+   
+class HistoryView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated, ]
+    
+    def get(self, request, format=None):
+        user = request.user
+        histories = History.objects.filter(user=user).order_by('-timestamp')
+        serializer = HistorySerializer(histories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+   
     
 class QueryAuthorView(views.APIView):
     def get(self, request, format=None):

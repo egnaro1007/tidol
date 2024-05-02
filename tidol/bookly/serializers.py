@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Author, Book, Chapter, Comment, Review, Bookmark, Follow
+from .models import Author, Book, Chapter, Comment, Review, Bookmark, Follow, History
 
 
 class AuthorSerializer(serializers.ModelSerializer):
@@ -25,9 +25,17 @@ class BookDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'author', 'author_name', 'description', 'chapters']
 
     class ChapterSerializer(serializers.ModelSerializer):
+        is_read = serializers.SerializerMethodField()
+        
         class Meta:
             model = Chapter
-            fields = ['id', 'title', 'chapter_number', 'lastupdated']
+            fields = ['id', 'title', 'chapter_number', 'lastupdated', 'is_read']
+        
+        def get_is_read(self, obj):
+            request = self.context.get('request')
+            if request and request.user.is_authenticated:
+                return History.objects.filter(user=request.user, chapter=obj).exists()
+            return False
 
     chapters = ChapterSerializer(many=True, read_only=True)
 
@@ -70,4 +78,16 @@ class FollowSerializer(serializers.ModelSerializer):
         model = Follow
         fields = ['id', 'user', 'book', 'book_title', 'timestamp']
         read_only_fields = ['timestamp']
+        
+class HistorySerializer(serializers.ModelSerializer):
+    book_id = serializers.IntegerField(source='chapter.book.id', read_only=True)
+    book_title = serializers.CharField(source='chapter.book.title', read_only=True)
+    chapter_id = serializers.IntegerField(source='chapter.id', read_only=True)
+    chapter_title = serializers.CharField(source='chapter.title', read_only=True)
+    
+    class Meta:
+        model = History
+        fields = ['id', 'user', 'book_id', 'book_title', 'chapter_id', 'chapter_title', 'timestamp']
+        read_only_fields = ['timestamp']
+    
     

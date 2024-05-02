@@ -74,15 +74,17 @@ class History(models.Model):
         ]
         
     def save(self, *args, **kwargs):
-        try:
-            existing = History.objects.get(user=self.user, chapter__book=self.chapter.book)
-            existing.timestamp = timezone.now()
-            existing.save()
-        except History.DoesNotExist:
-            super().save(*args, **kwargs)
+        if not self.pk:
+            try:
+                existing = History.objects.get(user=self.user, chapter=self.chapter)
+                self.pk = existing.pk
+            except History.DoesNotExist:
+                pass
+        self.timestamp = timezone.now()
+        super().save(*args, **kwargs)
     
     def __str__(self):
-        return f"{self.user.username} - {self.chapter.title}"
+        return f"{self.user.username} - {self.chapter.title} - {timezone.localtime(self.timestamp)}"
 
 
 class Comment(models.Model):
