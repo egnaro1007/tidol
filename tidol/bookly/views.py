@@ -1,3 +1,4 @@
+from django import shortcuts
 from django.http import QueryDict
 from rest_framework import permissions
 from rest_framework import serializers
@@ -6,9 +7,10 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Author, Book, Chapter
+
+from .models import Author, Book, Chapter, Bookmark, CustomUser
 from .permissions import IsAuthor, IsAuthorOf
-from .serializers import AuthorSerializer, BookSerializer, BookDetailSerializer, ChapterSerializer
+from .serializers import AuthorSerializer, BookSerializer, BookDetailSerializer, ChapterSerializer, BookmarkSerializer
 
 
 class Test(APIView):
@@ -108,6 +110,77 @@ class ChapterViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
 
+class BookmarkViewSet(viewsets.ModelViewSet):
+    queryset = Bookmark.objects.all()
+    serializer_class = BookmarkSerializer
+
+    def get_permissions(self):
+        if self.action in ['retrieve', 'create', ]:
+            return [permissions.IsAuthenticated(), ]
+        elif self.action in ['list', 'destroy', ]:
+            return [IsAuthorOf(), ]
+        return [permissions.IsAdminUser(), ]
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        chapter_id = request.data.get('chapter')
+        chapter = shortcuts.get_object_or_404(Chapter, pk=chapter_id)
+        page = request.data.get('page')
+
+        if page is None:
+            page = 0
+        elif page < 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        bookmark = Bookmark.objects.create(user=user, chapter=chapter, page=page)
+        serializers = BookmarkSerializer(bookmark)
+        return Response(serializers.data, status=status.HTTP_201_CREATED)
+
+    def list(self, request, *args, **kwargs):
+        user = request.user
+        bookmarks = Bookmark.objects.filter(user=user)
+
+        serializers = BookmarkSerializer(bookmarks, many=True)
+        return Response(serializers.data, status=status.HTTP_200_OK)
+
+    # PUT
+    def update(self, request, *args, **kwargs):
+        return Response({'error': 'Method not allowed.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        user = request.user
+
+        try:
+            user = CustomUser.objects.get(user=user)
+        except CustomUser.DoesNotExist:
+            return Response({'error': 'Not an user'}, status=status.HTTP_404_NOT_FOUND)
+
+        # if user is not request.user:
+        #     return Response({'User f{user.id} is not the user who bookmarked'}, status=status.HTTP_403_FORBIDDEN)
+        
+        bookmark_data = QueryDict('', mutable=True)
+        bookmark_data.update(request.data)
+        bookmark_data['user'] = user.id
+
+        serializer = BookmarkSerializer(data=bookmark_data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+    # PATCH
+    def partial_update(self, request, *args, **kwargs):
+        return Response({'error': 'Method not allowed.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        if request.data['user'] == self.get_object().user.id:
+            raise serializers.ValidationError(
+                {'error': 'The user is different from the user bookmarked the chapter.'})
+        if request.data['chapter'] != self.get_object().chapter.id:
+            raise serializers.ValidationError(
+                {'error': 'The chapter id is different from the chapter recorded.'})
+    
+    # DELETE
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
+
 class QueryAuthorView(APIView):
     def get(self, request, format=None):
         query = request.query_params.get('q')
@@ -148,16 +221,32 @@ class GetRecentUpdatesView(APIView):
         for chapter in chapters:
             if chapter.book not in books:
                 books.append(chapter.book)
-            if len(books) >= 5:
+            if len(books) >= 10:
                 break
 
         book_serializer = BookSerializer(books, many=True)
         return Response(book_serializer.data, status=status.HTTP_200_OK)
 
+class BookmarkView(APIView):
+    def get(self, request, format=None):
+        bookmarkList = []
+        bookmarks = Bookmark.objects.all().order_by('-page')
+        for bookmark in bookmarks:
+            if bookmark not in bookmarkList:
+                bookmarkList.append(bookmark.chapter)
+            if len(bookmarkList) >= 10:
+                break
+        
+        bookmark_serializer = BookmarkSerializer(bookmarkList)
+        return Response(bookmark_serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request, format=None):
+        pass
+
 # class BookCreate(APIView):
-#     def post(self, request, format=None):
-#         author_data = request.data.get('author')
-#         author, error, status_code = find_or_create_author(author_data)
+    # def post(self, request, format=None):
+    #     author_data = request.data.get('author')
+    #     author, error, status_code = find_or_create_author(author_data)
 
 #         if error is not None:
 #             return Response(error, status=status_code)

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Author, Book, Chapter
+from .models import Author, Book, Chapter, Bookmark
 
 
 class AuthorSerializer(serializers.ModelSerializer):
@@ -37,3 +37,10 @@ class ChapterSerializer(serializers.ModelSerializer):
         model = Chapter
         fields = ['id', 'title', 'chapter_number', 'book', 'content', 'created', 'lastupdated']
         read_only_fields = ['created', 'lastupdated']
+
+class BookmarkSerializer(serializers.ModelSerializer):
+    book_title = serializers.CharField(source='chapter.book.title', read_only=True)
+    class Meta:
+        model = Bookmark
+        fields = ['id', 'book_title', 'chapter_id', 'user_id',  'page']
+        read_only_field = ['user_id']

@@ -1,11 +1,12 @@
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from .views import Test, BookViewSet, ChapterViewSet, QueryView, QueryAuthorView, QueryBookView, GetRecentUpdatesView
+from .views import Test, BookViewSet, ChapterViewSet, BookmarkViewSet, QueryView, QueryAuthorView, QueryBookView, GetRecentUpdatesView, BookmarkView
 
 router = SimpleRouter()
 router.register(r'book', BookViewSet, basename='book')
 router.register(r'chapter', ChapterViewSet, basename='chapter')
+router.register(r'bookmark', BookmarkViewSet, basename='bookmark')
 
 urlpatterns = [
                   path('test', Test.as_view(), name='test'),

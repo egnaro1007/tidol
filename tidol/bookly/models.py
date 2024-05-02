@@ -109,3 +109,27 @@ class Review(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.book.title} - {self.score}"
     
+class Bookmark(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="users", null=False, 
+                                blank=False)
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name="bookmarks", null=False,
+                                   blank=False)
+    page = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'chapter', 'page'], name="unique_bookmark")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user.username} - {self.chapter.book.title} - {self.chapter.chapter_number} - {self.page}"
+
+class Follow(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="users", null=False, blank=False)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="books", null=False, blank=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        pass
+    def __str__(self) -> str:
+        return f"{self.user.username} - {self.book.title} - {self.timestamp}"
