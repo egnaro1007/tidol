@@ -6,7 +6,7 @@ from .models import Author, Book, Chapter, Comment, Review, Bookmark, Follow, Hi
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Author
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'bio']
 
 
 class BookSerializer(serializers.ModelSerializer):

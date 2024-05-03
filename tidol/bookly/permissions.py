@@ -1,6 +1,6 @@
 from rest_framework import permissions
 
-from .models import Author, Book, Chapter, Comment, Review, Follow
+from .models import Author, Book, Chapter, Comment, Review, Follow, History
 
 
 class IsAuthor(permissions.BasePermission):
@@ -36,5 +36,7 @@ class IsAuthorOf(permissions.BasePermission):
         elif isinstance(obj, Review):
             return obj.user == request.user
         elif isinstance(obj, Follow):
+            return obj.user == request.user
+        elif isinstance(obj, History):
             return obj.user == request.user
         return False
