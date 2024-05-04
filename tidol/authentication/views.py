@@ -34,6 +34,19 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         })
         
         
+class WhoAmIAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({
+            "username": request.user.username,
+            "email": request.user.email,
+            "first_name": request.user.first_name,
+            "last_name": request.user.last_name,
+        }, status=status.HTTP_200_OK)
+        
+        
 class RegisterUserAPIView(APIView):
     def post(self, request):
         serializer = RegisterUserSerializer(data=request.data)
