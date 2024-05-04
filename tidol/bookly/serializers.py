@@ -22,7 +22,7 @@ class BookDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Book
-        fields = ['id', 'title', 'author', 'author_name', 'description', 'chapters']
+        fields = ['id', 'title', 'author', 'author_name', 'description', 'cover', 'chapters']
 
     class ChapterSerializer(serializers.ModelSerializer):
         viewcount = serializers.SerializerMethodField()
@@ -88,14 +88,19 @@ class FollowSerializer(serializers.ModelSerializer):
         read_only_fields = ['timestamp']
         
 class HistorySerializer(serializers.ModelSerializer):
+    author_id = serializers.IntegerField(source='chapter.book.author.id', read_only=True)
+    author_name = serializers.CharField(source='chapter.book.author.name', read_only=True)
     book_id = serializers.IntegerField(source='chapter.book.id', read_only=True)
     book_title = serializers.CharField(source='chapter.book.title', read_only=True)
+    book_description = serializers.CharField(source='chapter.book.description', read_only=True)
+    book_cover = serializers.ImageField(source='chapter.book.cover', read_only=True)
     chapter_id = serializers.IntegerField(source='chapter.id', read_only=True)
     chapter_title = serializers.CharField(source='chapter.title', read_only=True)
+    chapter_number = serializers.IntegerField(source='chapter.chapter_number', read_only=True)
     
     class Meta:
         model = History
-        fields = ['id', 'user', 'book_id', 'book_title', 'chapter_id', 'chapter_title', 'timestamp']
+        fields = ['id', 'author_id', 'author_name', 'book_id', 'book_title', 'book_description', 'book_cover', 'chapter_id', 'chapter_title', 'chapter_number', 'timestamp']
         read_only_fields = ['timestamp']
     
     

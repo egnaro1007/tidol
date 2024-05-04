@@ -68,7 +68,7 @@ class Genre(models.Model):
         return self.name
 
 class History(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=False, blank=False)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True)
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, null=False, blank=False)
     timestamp = models.DateTimeField(auto_now_add=True)
     
@@ -78,6 +78,9 @@ class History(models.Model):
         ]
         
     def save(self, *args, **kwargs):
+        if self.user is None:
+            super().save(*args, **kwargs)
+            return
         if not self.pk:
             try:
                 existing = History.objects.get(user=self.user, chapter=self.chapter)
@@ -88,7 +91,7 @@ class History(models.Model):
         super().save(*args, **kwargs)
     
     def __str__(self):
-        return f"{self.user.username} - {self.chapter.title} - {timezone.localtime(self.timestamp)}"
+        return f"{self.user.username if self.user else 'Guest'} - {self.chapter.title} - {timezone.localtime(self.timestamp)}"
 
 
 class Comment(models.Model):

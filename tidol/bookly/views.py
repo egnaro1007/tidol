@@ -99,12 +99,13 @@ class ChapterViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         user = request.user
-        if user.is_authenticated:
-            try:
-                history_record = History(user=user, chapter=self.get_object())
-                history_record.save() 
-            except History.DoesNotExist:
-                History.objects.create(user=user, chapter=self.get_object())
+        if not user.is_authenticated:
+            user = None
+        try:
+            history_record = History(user=user, chapter=self.get_object())
+            history_record.save() 
+        except History.DoesNotExist:
+            History.objects.create(user=user, chapter=self.get_object())
         return super().retrieve(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
