@@ -4,6 +4,7 @@ from rest_framework import permissions
 from rest_framework import serializers
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from django.http import QueryDict
 from django.shortcuts import get_object_or_404
 
@@ -19,6 +20,7 @@ class Test(views.APIView):
 
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.all()
+    pagination_class=PageNumberPagination
 
     def get_serializer_class(self):
         if self.action in ['retrieve']:
@@ -74,6 +76,10 @@ class BookViewSet(viewsets.ModelViewSet):
         book = self.get_object()
         book.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    # GET
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
 
 class ChapterViewSet(viewsets.ModelViewSet):
