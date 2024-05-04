@@ -1,15 +1,39 @@
-from bookly.models import Author
-from bookly.serializers import AuthorSerializer
+from datetime import datetime
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from .models import CustomUser
 from .serializers import RegisterUserSerializer
+from .serializers import CustomTokenObtainPairSerializer
+from bookly.models import Author
+from bookly.serializers import AuthorSerializer
 
 
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        refresh = RefreshToken.for_user(user)
+
+        access_expiration = datetime.now() + refresh.access_token.lifetime
+        refresh_expiration = datetime.now() + refresh.lifetime
+
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'access_expires_at': access_expiration.isoformat(),
+            'refresh_expires_at': refresh_expiration.isoformat(),
+        })
+        
+        
 class RegisterUserAPIView(APIView):
     def post(self, request):
         serializer = RegisterUserSerializer(data=request.data)
