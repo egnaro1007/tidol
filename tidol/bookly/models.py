@@ -7,7 +7,8 @@ from authentication.models import CustomUser
 class Author(models.Model):
     name = models.CharField(max_length=128)
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True)
-
+    bio = models.TextField(null=True)
+    
     def __str__(self):
         return self.name
 
