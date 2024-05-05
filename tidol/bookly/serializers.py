@@ -19,10 +19,17 @@ class BookSerializer(serializers.ModelSerializer):
 
 class BookDetailSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.name', read_only=True)
+    is_followed = serializers.SerializerMethodField()
+    
+    def get_is_followed(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Follow.objects.filter(user=request.user, book=obj).exists()
+        return False
 
     class Meta:
         model = Book
-        fields = ['id', 'title', 'author', 'author_name', 'description', 'cover', 'chapters']
+        fields = ['id', 'title', 'author', 'author_name', 'description', 'cover', 'is_followed', 'chapters']
 
     class ChapterSerializer(serializers.ModelSerializer):
         viewcount = serializers.SerializerMethodField()
