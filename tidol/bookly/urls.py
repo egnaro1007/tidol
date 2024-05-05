@@ -18,6 +18,6 @@ urlpatterns = [
                   path('review/<int:id>/', ReviewView.as_view(), name='review'),
 
                   path('history/', HistoryView.as_view(), name='history'),
+                  path('follow/', FollowView.as_view(), name='follow'),
                   path('recentUpdates/', GetRecentUpdatesView.as_view(), name='recent-updates'),
-                  path('follow/<int:id>/', FollowView.as_view(), name='follow')
               ] + router.urls

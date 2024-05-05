@@ -137,6 +137,10 @@ class Follow(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="users", null=False, blank=False)
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="books", null=False, blank=False)
     timestamp = models.DateTimeField(auto_now_add=True)
+    
+    @staticmethod
+    def get_follow_of_user(user):
+        return Follow.objects.filter(user=user)
 
     class Meta:
         constraints = [
