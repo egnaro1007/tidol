@@ -28,6 +28,9 @@ class Book(models.Model):
 
     # Chapters
     # Many to many with Genres
+    
+    def count_views(self):
+        return sum([chapter.count_views() for chapter in Chapter.objects.filter(book=self)])
 
     def __str__(self):
         return self.title + " by " + str(self.author.name)

@@ -11,10 +11,23 @@ class AuthorSerializer(serializers.ModelSerializer):
 
 class BookSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.name', read_only=True)
+    viewcount = serializers.SerializerMethodField()
+    lastupdated = serializers.SerializerMethodField()
+    
+    def get_viewcount(self, obj):
+        return obj.count_views()
+    
+    def get_lastupdated(self, obj):
+        lastupdated = obj.lastupdated
+        chapters = obj.chapters.all()
+        if chapters:
+            lastupdated = max([lastupdated] + [chapter.lastupdated for chapter in chapters])
+        return lastupdated
+    
 
     class Meta:
         model = Book
-        fields = ['id', 'title', 'author', 'author_name', 'description', 'cover']
+        fields = ['id', 'title', 'author', 'author_name', 'description', 'cover', 'viewcount', 'lastupdated']
 
 
 class BookDetailSerializer(serializers.ModelSerializer):
@@ -88,10 +101,29 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only_fields = ['timestamp']
 
 class FollowSerializer(serializers.ModelSerializer):
+    author_id = serializers.IntegerField(source='book.author.id', read_only=True)
+    author_name = serializers.CharField(source='book.author.name', read_only=True)
+    book_id = serializers.IntegerField(source='book.id', read_only=True)
     book_title = serializers.CharField(source='book.title', read_only=True)
+    book_description = serializers.CharField(source='book.description', read_only=True)
+    book_cover = serializers.ImageField(source='book.cover', read_only=True)
+    latest_chapter = serializers.SerializerMethodField()
+    
+    def get_latest_chapter(self, obj):
+        latest_chapter = obj.book.chapters.order_by('-lastupdated').first()
+        if latest_chapter:
+            return {
+                'chapter_id': latest_chapter.id,
+                'chapter_number': latest_chapter.chapter_number,
+                'chapter_title': latest_chapter.title,
+                'lastupdated': latest_chapter.lastupdated
+            }
+        return None
+    
+    
     class Meta:
         model = Follow
-        fields = ['id', 'user', 'book', 'book_title', 'timestamp']
+        fields = ['id', 'user', 'author_id', 'author_name', 'book_id', 'book_title', 'book_description', 'book_cover', 'latest_chapter', 'timestamp']
         read_only_fields = ['timestamp']
         
 class HistorySerializer(serializers.ModelSerializer):
