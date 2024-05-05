@@ -18,6 +18,24 @@ class Test(views.APIView):
         return Response({'message': 'Hello, World!'})
 
 
+class GetBookOfAuthorView(views.APIView):
+    def get(self, request, format=None):
+        author_id = request.data.get('author_id')
+        user = request.user
+        
+        # If author_id is not provided, return the books of the current user
+        try:
+            author = Author.objects.get(user=user) if user.is_authenticated and author_id is None else Author.objects.get(pk=author_id)
+        except Author.DoesNotExist:
+            return Response({'error': 'Author not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not user.is_authenticated and author_id is None:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+            
+        books = Book.objects.filter(author=author)
+        serializers = BookSerializer(books, many=True)
+        return Response(serializers.data, status=status.HTTP_200_OK)
+
+
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.all()
     pagination_class=PageNumberPagination
