@@ -112,6 +112,7 @@ class Review(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=False, blank=False)
     score = models.IntegerField(choices=[(i, i) for i in range(1, 6)], blank=False, null=False)
     comment = models.TextField(null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         constraints = [

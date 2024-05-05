@@ -39,11 +39,14 @@ class GetBookOfAuthorView(views.APIView):
 class GetInfoOfAuthorView(views.APIView):
     def get(self, request, format=None):
         author_id = request.query_params.get('author_id')
+        user = request.user
         
         try:
-            author = Author.objects.get(pk=author_id)
+            author = Author.objects.get(pk=author_id) if user.is_authenticated and author_id is not None else Author.objects.get(user=user)
         except Author.DoesNotExist:
             return Response({'error': 'Author not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not user.is_authenticated and author_id is None:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         
         serializer = AuthorSerializer(author)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -307,10 +310,10 @@ class ReviewView(views.APIView):
     # User delete their review
     def delete(self, request, id, format=None):
         user = request.user
-        review_id = id
+        book_id = id
         
         try:
-            review = Review.objects.get(pk=review_id)
+            review = Review.objects.get(user=user, book=book_id)
         except Review.DoesNotExist:
             return Response({'error': 'Comment not found.'}, status=status.HTTP_404_NOT_FOUND)
         
