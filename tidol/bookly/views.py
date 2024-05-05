@@ -20,7 +20,7 @@ class Test(views.APIView):
 
 class GetBookOfAuthorView(views.APIView):
     def get(self, request, format=None):
-        author_id = request.data.get('author_id')
+        author_id = request.query_params.get('author_id')
         user = request.user
         
         # If author_id is not provided, return the books of the current user
@@ -34,6 +34,19 @@ class GetBookOfAuthorView(views.APIView):
         books = Book.objects.filter(author=author)
         serializers = BookSerializer(books, many=True)
         return Response(serializers.data, status=status.HTTP_200_OK)
+
+
+class GetInfoOfAuthorView(views.APIView):
+    def get(self, request, format=None):
+        author_id = request.query_params.get('author_id')
+        
+        try:
+            author = Author.objects.get(pk=author_id)
+        except Author.DoesNotExist:
+            return Response({'error': 'Author not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = AuthorSerializer(author)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class BookViewSet(viewsets.ModelViewSet):
