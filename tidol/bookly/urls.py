@@ -12,10 +12,10 @@ router.register(r'chapter', ChapterViewSet, basename='chapter')
 router.register(r'bookmark', BookmarkViewSet, basename='bookmark')
 
 urlpatterns = [
-                  path('test', Test.as_view(), name='test'),
-                  path('getbookofauthor', GetBookOfAuthorView.as_view(), name='get-book-of-author'),
+                  path('test/', Test.as_view(), name='test'),
+                  path('getbookofauthor/', GetBookOfAuthorView.as_view(), name='get-book-of-author'),
                   
-                  path('search', QueryView.as_view(), name='search'),
+                  path('search/', QueryView.as_view(), name='search'),
                   path('search/author', QueryAuthorView.as_view(), name='search-author'),
                   path('search/book', QueryBookView.as_view(), name='search-book'),
                   
