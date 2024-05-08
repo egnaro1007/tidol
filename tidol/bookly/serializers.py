@@ -12,10 +12,14 @@ class AuthorSerializer(serializers.ModelSerializer):
 class BookSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.name', read_only=True)
     viewcount = serializers.SerializerMethodField()
+    number_of_chapters = serializers.SerializerMethodField()
     lastupdated = serializers.SerializerMethodField()
     
     def get_viewcount(self, obj):
         return obj.count_views()
+    
+    def get_number_of_chapters(self, obj):
+        return obj.chapters.count()
     
     def get_lastupdated(self, obj):
         lastupdated = obj.lastupdated
@@ -27,7 +31,7 @@ class BookSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Book
-        fields = ['id', 'title', 'author', 'author_name', 'description', 'cover', 'viewcount', 'lastupdated']
+        fields = ['id', 'title', 'author', 'author_name', 'description', 'cover', 'viewcount', 'number_of_chapters', 'lastupdated']
 
 
 class BookDetailSerializer(serializers.ModelSerializer):
@@ -94,10 +98,11 @@ class CommentSerializer(serializers.ModelSerializer):
         
 class ReviewSerializer(serializers.ModelSerializer):
     book_title = serializers.CharField(source='book.title', read_only=True)
+    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
     
     class Meta:
         model = Review
-        fields = ['id', 'book', 'book_title', 'user', 'score', 'comment', 'timestamp']
+        fields = ['id', 'book', 'book_title', 'user', 'user_name', 'score', 'comment', 'timestamp']
         read_only_fields = ['timestamp']
 
 class FollowSerializer(serializers.ModelSerializer):

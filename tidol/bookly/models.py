@@ -31,6 +31,12 @@ class Book(models.Model):
     
     def count_views(self):
         return sum([chapter.count_views() for chapter in Chapter.objects.filter(book=self)])
+    
+    def get_lastest_chapter(self):
+        return Chapter.objects.filter(book=self).order_by('-lastupdated').first()
+    
+    def get_first_chapter(self):
+        return Chapter.objects.filter(book=self).order_by('created').first()
 
     def __str__(self):
         return self.title + " by " + str(self.author.name)

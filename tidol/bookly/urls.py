@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from .views import Test, BookViewSet, ChapterViewSet, BookmarkViewSet
+from .views import Test, HomePageView, BookViewSet, ChapterViewSet, BookmarkViewSet
 from .views import GetBookOfAuthorView, GetInfoOfAuthorView
 from .views import CommentView, ReviewView, HistoryView, FollowView
 from .views import QueryView, QueryAuthorView, QueryBookView,  GetRecentUpdatesView
@@ -13,6 +13,7 @@ router.register(r'bookmark', BookmarkViewSet, basename='bookmark')
 
 urlpatterns = [
                   path('test/', Test.as_view(), name='test'),
+                  path('gethomepage/', HomePageView.as_view(), name='get-homepage'),
                   path('getbookofauthor/', GetBookOfAuthorView.as_view(), name='get-book-of-author'),
                   path('getinfoofauthor/', GetInfoOfAuthorView.as_view(), name='get-info-of-author'),
                   

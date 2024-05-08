@@ -1,3 +1,7 @@
+from django.db.models import Max
+from django.http import QueryDict
+from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import get_object_or_404
 from rest_framework import views
 from rest_framework import viewsets
 from rest_framework import permissions
@@ -5,8 +9,6 @@ from rest_framework import serializers
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from django.http import QueryDict
-from django.shortcuts import get_object_or_404
 
 from .models import Author, Book, Chapter, Comment, Review, Bookmark, CustomUser, Follow, History
 from .permissions import IsAuthor, IsAuthorOf
@@ -16,6 +18,53 @@ from .serializers import AuthorSerializer, BookSerializer, BookDetailSerializer,
 class Test(views.APIView):
     def get(self, request, format=None):
         return Response({'message': 'Hello, World!'})
+    
+
+class HomePageView(views.APIView):
+    def get(self, request, format=None):
+        number = int(request.query_params.get('number', '5'))
+        
+        sportlight=[]
+        last_updated_books=[]
+        popular_books=[]
+        last_added_books=[]
+        
+        
+        query_set = Book.objects.all()
+        
+        sportlight = query_set.order_by('?')[:number]
+        # last_updated_books = Book.objects.annotate(
+        #     latest_chapter_updated=Max('chapters__lastupdated')
+        # ).order_by('-latest_chapter_updated')[:5]
+        last_updated_books = sorted(
+            [book for book in query_set if book.get_lastest_chapter() is not None], 
+            key=lambda book: book.get_lastest_chapter().lastupdated, 
+            reverse=True
+        )[:number]
+        
+        popular_books = sorted(
+            query_set, 
+            key=lambda book: book.count_views(), 
+            reverse=True
+        )[:number]
+        
+        last_added_books = sorted(
+            [book for book in query_set if book.get_first_chapter() is not None],
+            key=lambda book: book.get_first_chapter().created,
+        )[:number]
+        
+        
+        sport_light_serializer = BookSerializer(sportlight, many=True)
+        last_updated_books_serializer = BookSerializer(last_updated_books, many=True)
+        popular_books_serializer = BookSerializer(popular_books, many=True)
+        last_added_books_serializer = BookSerializer(last_added_books, many=True)
+    
+        return Response({
+                        'sportlight': sport_light_serializer.data,
+                        'last_updated_books': last_updated_books_serializer.data, 
+                        'popular_books': popular_books_serializer.data, 
+                        'last_added_books': last_added_books_serializer.data
+                        }, status=status.HTTP_200_OK)
 
 
 class GetBookOfAuthorView(views.APIView):
@@ -325,16 +374,25 @@ class ReviewView(views.APIView):
         
     # Retrieve reviews
     def get(self, request, id, format=None):
+        user = request.user
         book_id = id
         
+        book = get_object_or_404(Book, pk=book_id)
+        
         try:
-            reviews = Review.objects.filter(book=book_id)
+            all_reviews = Review.objects.filter(book=book_id)
         except Book.DoesNotExist:
-            book = get_object_or_404(Book, pk=book_id)
-            return Response([], status=status.HTTP_200_OK)
-    
-        serializer = ReviewSerializer(reviews, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response({"my_review": None, "all_reviews": []}, status=status.HTTP_200_OK)
+
+        try:
+            my_review = Review.objects.get(user=user, book=book_id) if user.is_authenticated else None
+        except ObjectDoesNotExist:
+            my_review = None
+
+        my_review_serializer_data = ReviewSerializer(my_review).data if my_review else None
+        all_reviews_serializer_data = ReviewSerializer(all_reviews, many=True).data
+        
+        return Response({"my_review": my_review_serializer_data, "all_reviews": all_reviews_serializer_data}, status=status.HTTP_200_OK)
 
 
 class FollowView(views.APIView):
