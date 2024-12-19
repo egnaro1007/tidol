@@ -14,6 +14,7 @@ class BookSerializer(serializers.ModelSerializer):
     viewcount = serializers.SerializerMethodField()
     number_of_chapters = serializers.SerializerMethodField()
     lastupdated = serializers.SerializerMethodField()
+    cover = serializers.SerializerMethodField()
     
     def get_viewcount(self, obj):
         return obj.count_views()
@@ -28,6 +29,9 @@ class BookSerializer(serializers.ModelSerializer):
             lastupdated = max([lastupdated] + [chapter.lastupdated for chapter in chapters])
         return lastupdated
     
+    def get_cover(self, obj):
+        cover_url = str(obj.cover)
+        return cover_url
 
     class Meta:
         model = Book
@@ -37,12 +41,17 @@ class BookSerializer(serializers.ModelSerializer):
 class BookDetailSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.name', read_only=True)
     is_followed = serializers.SerializerMethodField()
+    cover = serializers.SerializerMethodField()
     
     def get_is_followed(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return Follow.objects.filter(user=request.user, book=obj).exists()
         return False
+    
+    def get_cover(self, obj):
+        cover_url = str(obj.cover)
+        return cover_url
 
     class Meta:
         model = Book
