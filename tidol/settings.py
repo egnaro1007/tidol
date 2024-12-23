@@ -68,8 +68,8 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:8000",
+    "http://tidol-fe.winddarroww-dev.svc.cluster.local",
+    "http://tidol-be.winddarroww-dev.svc.cluster.local",
     # "http://your-production-url.com",
 ]
 
@@ -151,7 +151,7 @@ DATABASES = {
         'NAME': 'tidol',
         'USER': 'postgres',
         'PASSWORD': 'postgres',
-        'HOST': '127.0.0.1',
+        'HOST': 'postgresql.winddarroww-dev.svc.cluster.local',
         'PORT': '5432',
     }
     # 'default': {
