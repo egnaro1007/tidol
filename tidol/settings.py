@@ -22,7 +22,6 @@ from pathlib import Path
 # else:
 #     os.environ["PYTHONIOENCODING"] = "utf-8"
 
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -72,6 +71,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://tidol-be.winddarroww-dev.svc.cluster.local:8080",
     # "http://your-production-url.com",
 ]
+
+MIGRATION_MODULES = {
+        app: None
+        for app in INSTALLED_APPS
+}
 
 ROOT_URLCONF = 'tidol.urls'
 
