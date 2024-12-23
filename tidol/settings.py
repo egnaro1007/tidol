@@ -69,7 +69,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://tidol-fe.winddarroww-dev.svc.cluster.local:3000",
-    "http://tidol-be.winddarroww-dev.svc.cluster.local:8000",
+    "http://tidol-be.winddarroww-dev.svc.cluster.local:8080",
     # "http://your-production-url.com",
 ]
 
